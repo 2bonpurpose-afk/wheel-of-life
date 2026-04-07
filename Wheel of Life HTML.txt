@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>2 Master Coaches - Wheel of Life</title>
+  <style>
+    :root{--brand:#1175C0;--brand-dark:#0e63a2;--fill:rgba(17,117,192,.82);--text:#1f2937;--muted:#6b7280;--bg:#f8fbff;--card:#ffffff}
+    *{box-sizing:border-box} body{margin:0;font-family:Arial,Helvetica,sans-serif;color:var(--text);background:linear-gradient(180deg,#fff 0%,var(--bg) 100%)}
+    .wrap{max-width:1280px;margin:0 auto;padding:28px 20px 48px}.hero,.card{background:var(--card);border:1px solid #e5e7eb;border-radius:24px;box-shadow:0 10px 30px rgba(15,23,42,.05)}
+    .hero{padding:24px;margin-bottom:22px}.brand{color:var(--brand);font-size:13px;font-weight:700;letter-spacing:.08em}h1{margin:8px 0 8px;font-size:40px;line-height:1.05;color:#0f172a}
+    .sub{max-width:760px;color:var(--muted);font-size:15px;line-height:1.6;margin:0}.actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:18px}
+    button{border:none;border-radius:16px;padding:12px 16px;font-size:14px;font-weight:700;cursor:pointer}.primary{background:var(--brand);color:#fff}.primary:hover{background:var(--brand-dark)}
+    .secondary{background:#fff;color:var(--text);border:1px solid #d1d5db}.grid{display:grid;grid-template-columns:1.15fr .85fr;gap:22px;align-items:start}.card{padding:22px}
+    .card h2{margin:0 0 8px;font-size:28px;color:#0f172a}.top{margin:0 0 20px;color:var(--muted);line-height:1.5;font-size:14px}.wheel-wrap{overflow:auto}
+    svg{width:100%;min-width:760px;max-width:820px;height:auto;display:block;margin:0 auto}.control{border:1px solid #e5e7eb;border-radius:18px;padding:14px 14px 16px;margin-bottom:12px}
+    .row{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:10px}.label{font-size:14px;font-weight:600}.score{color:var(--brand);font-size:20px;font-weight:800;min-width:24px;text-align:right}
+    input[type="range"]{width:100%;accent-color:var(--brand)}.stat{border:1px solid #e5e7eb;border-radius:18px;padding:16px;margin-top:12px}.eyebrow{color:var(--muted);font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase}
+    .big{font-size:34px;font-weight:800;color:var(--brand);margin-top:6px}.value{margin-top:8px;font-size:16px;font-weight:700;line-height:1.45}.prompt{margin-top:8px;color:var(--text);line-height:1.6;font-size:15px}.hint{font-size:12px;color:var(--muted);margin-top:10px}
+    .wedge,.num-circle{cursor:pointer}@media (max-width:1000px){.grid{grid-template-columns:1fr}h1{font-size:34px}}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="hero">
+      <div class="brand">2 MASTER COACHES LLC</div>
+      <h1>Wheel of Life</h1>
+      <p class="sub">Click directly on a number inside any spoke to set that score. The spoke fills dark blue up to that level so you can quickly see where life feels strong and where growth may be needed.</p>
+      <div class="actions">
+        <button class="primary" id="downloadBtn">Download Results</button>
+        <button class="secondary" id="resetBtn">Reset Scores</button>
+      </div>
+    </div>
+    <div class="grid">
+      <div class="card">
+        <h2>Interactive Wheel</h2>
+        <p class="top">Click a number in any category. The section fills dark blue up to that number.</p>
+        <div class="wheel-wrap"><svg id="wheelSvg" viewBox="0 0 780 780" aria-label="Wheel of Life"></svg></div>
+      </div>
+      <div>
+        <div class="card">
+          <h2>Score Each Area</h2>
+          <p class="top">Use the sliders if you prefer, or click the numbers directly on the wheel.</p>
+          <div id="controls"></div>
+        </div>
+        <div class="card" style="margin-top:22px;">
+          <h2>Quick Coaching View</h2>
+          <p class="top">Use this summary to guide reflection or conversation.</p>
+          <div class="stat"><div class="eyebrow">Average score</div><div class="big" id="avg"></div></div>
+          <div class="stat"><div class="eyebrow">Highest area(s)</div><div class="value" id="highest"></div></div>
+          <div class="stat"><div class="eyebrow">Lowest area(s)</div><div class="value" id="lowest"></div></div>
+          <div class="stat"><div class="eyebrow">Reflection prompt</div><div class="prompt">Which one of your lowest-scoring areas, if strengthened, would create the greatest positive ripple effect in the rest of your life?</div></div>
+          <div class="hint">Tip: You can save this page as a PDF from your browser after completing it.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script>
+    const BRAND="#1175C0",FILL="rgba(17,117,192,0.82)";
+    const categories=["Career / Business","Family & Friends","Finances","Romance / Intimacy","Health / Self-care","Social / Fun","Personal / Spiritual Development","Physical Environment"];
+    const labelLines={"Career / Business":["Career","/ Business"],"Family & Friends":["Family","& Friends"],"Finances":["Finances"],"Romance / Intimacy":["Romance","/ Intimacy"],"Health / Self-care":["Health","/ Self-care"],"Social / Fun":["Social","/ Fun"],"Personal / Spiritual Development":["Personal","Spiritual","Development"],"Physical Environment":["Physical","Environment"]};
+    let scores=[5,5,5,5,5,5,5,5];
+    const size=780,cx=size/2,cy=size/2,innerCore=58,maxOuter=217,band=(maxOuter-innerCore)/10,svg=document.getElementById("wheelSvg"),controls=document.getElementById("controls");
+    function polarToCartesian(cx,cy,r,a){const ang=(a-90)*Math.PI/180;return{x:cx+r*Math.cos(ang),y:cy+r*Math.sin(ang)}}
+    function wedgePath(cx,cy,innerR,outerR,start,end){const p1=polarToCartesian(cx,cy,outerR,start),p2=polarToCartesian(cx,cy,outerR,end),p3=polarToCartesian(cx,cy,innerR,end),p4=polarToCartesian(cx,cy,innerR,start),large=end-start<=180?0:1;return[`M ${p1.x} ${p1.y}`,`A ${outerR} ${outerR} 0 ${large} 1 ${p2.x} ${p2.y}`,`L ${p3.x} ${p3.y}`,`A ${innerR} ${innerR} 0 ${large} 0 ${p4.x} ${p4.y}`,"Z"].join(" ")}
+    function createSvgEl(tag,attrs={}){const el=document.createElementNS("http://www.w3.org/2000/svg",tag);for(const[k,v]of Object.entries(attrs))el.setAttribute(k,v);return el}
+    function setScore(i,v){scores[i]=v;render()} function resetScores(){scores=[5,5,5,5,5,5,5,5];render()}
+    function downloadResults(){const avg=(scores.reduce((a,b)=>a+b,0)/scores.length).toFixed(1),lines=["2 Master Coaches LLC - Wheel of Life Results","",...categories.map((c,i)=>`${c}: ${scores[i]}`),"",`Average Score: ${avg}`],blob=new Blob([lines.join("\n")],{type:"text/plain;charset=utf-8"}),url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download="wheel-of-life-results.txt";a.click();URL.revokeObjectURL(url)}
+    function buildControls(){controls.innerHTML="";categories.forEach((category,i)=>{const box=document.createElement("div");box.className="control";const row=document.createElement("div");row.className="row";const label=document.createElement("div");label.className="label";label.textContent=category;const score=document.createElement("div");score.className="score";score.textContent=scores[i];row.appendChild(label);row.appendChild(score);const slider=document.createElement("input");slider.type="range";slider.min="1";slider.max="10";slider.step="1";slider.value=scores[i];slider.addEventListener("input",e=>setScore(i,Number(e.target.value)));box.appendChild(row);box.appendChild(slider);controls.appendChild(box)})}
+    function buildStats(){const avg=(scores.reduce((a,b)=>a+b,0)/scores.length).toFixed(1),max=Math.max(...scores),min=Math.min(...scores);document.getElementById("avg").textContent=avg;document.getElementById("highest").textContent=categories.filter((_,i)=>scores[i]===max).join(", ");document.getElementById("lowest").textContent=categories.filter((_,i)=>scores[i]===min).join(", ")}
+    function buildWheel(){svg.innerHTML="";[3,7,10].forEach(step=>svg.appendChild(createSvgEl("circle",{cx,cy,r:innerCore+band*step,fill:"none",stroke:BRAND,"stroke-width":"1.4",opacity:"0.9"})));svg.appendChild(createSvgEl("circle",{cx,cy,r:innerCore,fill:"white",stroke:BRAND,"stroke-width":"1.6"}));
+      categories.forEach((label,i)=>{const start=i*45,end=start+45,centerAngle=start+22.5;for(let level=1;level<=10;level++){const path=createSvgEl("path",{d:wedgePath(cx,cy,innerCore+band*(level-1),innerCore+band*level,start,end),fill:scores[i]>=level?FILL:"transparent",stroke:BRAND,"stroke-width":"0.8",class:"wedge"});path.addEventListener("click",()=>setScore(i,level));svg.appendChild(path)}
+      for(let level=1;level<=10;level++){const radius=innerCore+band*(level-.5),p=polarToCartesian(cx,cy,radius,centerAngle),g=createSvgEl("g",{class:"num-circle"});g.addEventListener("click",()=>setScore(i,level));g.appendChild(createSvgEl("circle",{cx:p.x,cy:p.y,r:11,fill:"rgba(255,255,255,0.97)",stroke:BRAND,"stroke-width":"1.1"}));const t=createSvgEl("text",{x:p.x,y:p.y+4,"text-anchor":"middle","font-size":"10","font-weight":"700",fill:BRAND});t.textContent=String(level);g.appendChild(t);svg.appendChild(g)}});
+      for(let i=0;i<8;i++){const angle=i*45,p1=polarToCartesian(cx,cy,innerCore,angle),p2=polarToCartesian(cx,cy,maxOuter,angle);svg.appendChild(createSvgEl("line",{x1:p1.x,y1:p1.y,x2:p2.x,y2:p2.y,stroke:BRAND,"stroke-width":"1.5"}))}
+      categories.forEach((label,i)=>{const angle=i*45+22.5,labelRadius=label==="Finances"?maxOuter+112:label==="Personal / Spiritual Development"?maxOuter+155:maxOuter+108,p=polarToCartesian(cx,cy,labelRadius,angle),lines=labelLines[label],text=createSvgEl("text",{x:p.x,y:p.y-((lines.length-1)*8),"text-anchor":"middle","font-size":"13","font-weight":"700",fill:BRAND});lines.forEach((line,idx)=>{const tspan=createSvgEl("tspan",{x:p.x,dy:idx===0?0:16});tspan.textContent=line;text.appendChild(tspan)});svg.appendChild(text)});
+      const t1=createSvgEl("text",{x:cx,y:cy-6,"text-anchor":"middle","font-size":"18","font-weight":"700",fill:BRAND});t1.textContent="Core Values";svg.appendChild(t1);const t2=createSvgEl("text",{x:cx,y:cy+18,"text-anchor":"middle","font-size":"18","font-weight":"700",fill:BRAND});t2.textContent="/ Purpose";svg.appendChild(t2)}
+    function render(){buildControls();buildStats();buildWheel()} document.getElementById("resetBtn").addEventListener("click",resetScores);document.getElementById("downloadBtn").addEventListener("click",downloadResults);render();
+  </script>
+</body>
+</html>
